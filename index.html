@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BengaluruBand - South Indian Beats & More</title>
+    <meta name="description" content="Mobile-first music generator with powerful South Indian Tamate beats and various other instruments.">
+    <style>
+        :root {
+            --bg-dark: #121212;
+            --bg-panel: #1e1e1e;
+            --bg-grid: #2a2a2a;
+            --primary: #ff5722; /* Tamate Energy Orange */
+            --accent: #00e5ff;
+            --success: #00c853;
+            --text-main: #ffffff;
+            --text-muted: #b0b0b0;
+            --grid-active: #ff9800;
+            --border-radius: 12px;
+            --beat-shadow: 0 0 10px rgba(255, 87, 34, 0.5);
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Header & Canvas */
+        header {
+            padding: 15px;
+            background: var(--bg-panel);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333;
+            z-index: 10;
+            flex-wrap: wrap; /* Allow wrapping on small screens */
+            gap: 10px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.2rem;
+            background: linear-gradient(45deg, var(--primary), #ffca28);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+            letter-spacing: 1px;
+            white-space: nowrap;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        #visualizer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.2;
+        }
+
+        /* Main Control Area */
+        .controls-bar {
+            padding: 10px 15px;
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            background: var(--bg-dark);
+            align-items: center;
+        }
+
+        .btn {
+            background: var(--bg-panel);
+            border: 1px solid #444;
+            color: white;
+            padding: 10px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+            font-weight: 600;
+        }
+
+        .btn:active { transform: scale(0.95); }
+        .btn-primary { background: var(--primary); border-color: var(--primary); color: #000; }
+        .btn-accent { background: transparent; border-color: var(--accent); color: var(--accent); }
+        .btn-success { background: var(--success); border-color: var(--success); color: #000; }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            background: var(--bg-panel);
+            border-radius: 20px;
+            padding: 5px 12px;
+            border: 1px solid #444;
+        }
+
+        .control-group input {
+            background: transparent;
+            border: none;
+            color: white;
+            width: 50px;
+            text-align: center;
+            font-size: 1rem;
+            font-weight: bold;
+            -moz-appearance: textfield;
+        }
+
+        .control-group input::-webkit-outer-spin-button,
+        .control-group input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .control-label { font-size: 0.7rem; color: var(--text-muted); margin-right: 5px; text-transform: uppercase; }
+
+        /* Sequencer Grid */
+        .sequencer-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            position: relative;
+            z-index: 5;
+        }
+
+        .track {
+            background: var(--bg-panel);
+            border-radius: var(--border-radius);
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #333;
+        }
+
+        .track-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .track-name { font-weight: bold; font-size: 0.9rem; color: var(--accent); }
+
+        .track-controls button {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.2rem;
+            padding: 0 5px;
+            cursor: pointer;
+        }
+
+        .steps-wrapper {
+            overflow-x: auto;
+            padding-bottom: 5px;
+            scrollbar-width: none;
+        }
+        .steps-wrapper::-webkit-scrollbar { display: none; }
+
+        .step-grid {
+            display: grid;
+            grid-template-columns: repeat(16, 1fr);
+            gap: 4px;
+            min-width: 600px;
+        }
+
+        .step {
+            aspect-ratio: 1;
+            background: var(--bg-grid);
+            border-radius: 4px;
+            cursor: pointer;
+            position: relative;
+            transition: background 0.1s;
+        }
+
+        .step.active {
+            background: var(--primary);
+            box-shadow: var(--beat-shadow);
+        }
+
+        .step.playing {
+            border: 2px solid white;
+        }
+
+        .step.current-beat {
+            background-color: #444;
+        }
+        .step.active.current-beat {
+            background-color: #ffcc80;
+        }
+
+        /* Bottom Toolbar */
+        .footer-toolbar {
+            background: var(--bg-panel);
+            padding: 15px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr); /* 2 cols by default */
+            gap: 10px;
+            border-top: 1px solid #333;
+            z-index: 20;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            backdrop-filter: blur(5px);
+        }
+        .modal {
+            background: var(--bg-panel);
+            padding: 0;
+            border-radius: var(--border-radius);
+            width: 95%;
+            max-width: 600px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #444;
+            overflow: hidden;
+        }
+        .modal-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #252525;
+        }
+        .modal-header h3 { margin: 0; color: var(--primary); }
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        /* Preset List Styling */
+        .preset-category {
+            margin-bottom: 20px;
+        }
+        .preset-category h4 {
+            color: var(--accent);
+            border-bottom: 1px solid #333;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+        }
+        .preset-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 10px;
+        }
+        .preset-item {
+            background: #2a2a2a;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 1px solid transparent;
+            text-align: center;
+        }
+        .preset-item:hover {
+            background: #333;
+            border-color: var(--primary);
+        }
+        .preset-name { font-weight: bold; font-size: 0.9rem; margin-bottom: 5px; display: block; }
+        .preset-meta { font-size: 0.75rem; color: #888; }
+
+        textarea {
+            width: 100%;
+            height: 100px;
+            background: #111;
+            color: #fff;
+            border: 1px solid #444;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-family: monospace;
+            padding: 8px;
+        }
+
+        /* File Import Styles */
+        .file-import-wrapper {
+            border: 2px dashed #444;
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: border 0.3s;
+        }
+        .file-import-wrapper:hover {
+            border-color: var(--primary);
+        }
+        input[type="file"] {
+            display: none;
+        }
+        .import-label {
+            color: var(--accent);
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* Icons */
+        svg { width: 18px; height: 18px; fill: currentColor; }
+
+        /* Initial Cover */
+        #start-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-dark);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            text-align: center;
+            padding: 20px;
+        }
+        #start-overlay h1 { font-size: 2.5rem; margin-bottom: 10px; }
+        #start-overlay p { color: #888; max-width: 300px; margin-bottom: 10px; line-height: 1.5; }
+        .author-credit { font-size: 0.9rem; color: var(--accent); font-style: italic; margin-bottom: 30px; }
+
+    </style>
+</head>
+<body>
+
+    <canvas id="visualizer"></canvas>
+
+    <header>
+        <h1>BengaluruBand</h1>
+        <div class="header-controls">
+            <div class="control-group" title="Beats Per Minute">
+                <span class="control-label">BPM</span>
+                <input type="number" id="bpm-input" value="120" min="40" max="240">
+            </div>
+            <div class="control-group" title="Export Duration (Number of Loops)">
+                <span class="control-label">Loops</span>
+                <input type="number" id="loops-input" value="4" min="1" max="32">
+            </div>
+        </div>
+    </header>
+
+    <div class="controls-bar">
+        <button id="play-btn" class="btn btn-primary">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> Play
+        </button>
+        <button id="stop-btn" class="btn">
+            <svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg> Stop
+        </button>
+        <button id="clear-btn" class="btn btn-accent">Clear All</button>
+        <select id="instrument-select" class="btn" style="appearance: none; -webkit-appearance: none; padding-right: 30px;">
+            <option value="tamate">🥁 Tamate (South Indian)</option>
+            <option value="tabla">🪘 Tabla</option>
+            <option value="flute">🪈 Flute</option>
+            <option value="piano">🎹 Piano</option>
+            <option value="synth">🎛️ Synth Wave</option>
+            <option value="drums">🥁 Standard Kit</option>
+            <option value="bass">🎸 Funky Bass</option>
+        </select>
+    </div>
+
+    <div class="sequencer-container" id="sequencer">
+        <!-- Tracks will be injected here JS -->
+    </div>
+
+    <div class="footer-toolbar">
+        <button class="btn" onclick="app.showPresetModal()">
+            <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/></svg> Load Preset
+        </button>
+        <button class="btn" onclick="app.downloadRingtone()">
+            <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg> Ringtone
+        </button>
+        <button class="btn" onclick="app.exportJSON()">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg> Export
+        </button>
+        <button class="btn" onclick="app.showImportModal()">
+            <svg viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg> Import
+        </button>
+    </div>
+
+    <!-- Import Modal -->
+    <div id="import-modal" class="modal-overlay">
+        <div class="modal" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3>Import JSON</h3>
+                <button class="btn" onclick="document.getElementById('import-modal').style.display='none'" style="padding:5px 10px;">✕</button>
+            </div>
+            <div class="modal-body">
+                <!-- File Import Section -->
+                <label class="file-import-wrapper" style="display:block;">
+                    <div class="import-label">📂 Tap to Upload .json File</div>
+                    <input type="file" id="import-file" accept=".json" onchange="app.handleFileImport(this)">
+                </label>
+
+                <div style="text-align:center; color:#666; margin: 10px 0; font-size:0.8rem;">OR PASTE TEXT</div>
+
+                <textarea id="import-area" placeholder="Paste JSON code here..."></textarea>
+                <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:10px;">
+                    <button class="btn btn-primary" onclick="app.importJSON()">Load Data</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preset Library Modal -->
+    <div id="preset-modal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>🎵 Predefined Beats Library</h3>
+                <button class="btn" onclick="document.getElementById('preset-modal').style.display='none'" style="padding:5px 10px;">✕</button>
+            </div>
+            <div class="modal-body" id="preset-list">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <div id="start-overlay">
+        <h1>BengaluruBand</h1>
+        <p>Experience the powerful beats of the Tamate and create your own ringtones.</p>
+        <p class="author-credit">authored by TPR with AI</p>
+        <button class="btn btn-primary" style="font-size: 1.2rem; padding: 15px 30px;" id="init-audio-btn">Start Creating</button>
+    </div>
+
+<script>
+/**
+ * BengaluruBand Logic
+ * Single File Audio Engine & UI Controller
+ */
+
+// --- Audio Engine (Synthesizer) ---
+const AudioEngine = {
+    ctx: null,
+    masterGain: null,
+    analyser: null,
+    lookahead: 25.0,
+    scheduleAheadTime: 0.1,
+    nextNoteTime: 0.0,
+    current16thNote: 0,
+    isPlaying: false,
+    timerID: null,
+    tempo: 120,
+
+    init() {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        this.ctx = new AudioContext();
+        this.masterGain = this.ctx.createGain();
+        this.analyser = this.ctx.createAnalyser();
+        this.analyser.fftSize = 256;
+
+        this.masterGain.connect(this.analyser);
+        this.analyser.connect(this.ctx.destination);
+        this.masterGain.gain.value = 0.8;
+    },
+
+    playNote(instrument, pitch, time) {
+        if (!this.ctx) return;
+        const t = time || this.ctx.currentTime;
+
+        if (instrument === 'tamate') this.playTamate(pitch, t);
+        else if (instrument === 'tabla') this.playTabla(pitch, t);
+        else if (instrument === 'flute') this.playFlute(pitch, t);
+        else if (instrument === 'piano') this.playPiano(pitch, t);
+        else if (instrument === 'synth') this.playSynth(pitch, t);
+        else if (instrument === 'drums') this.playDrumKit(pitch, t);
+        else if (instrument === 'bass') this.playBass(pitch, t);
+    },
+
+    playTamate(type, t) {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        // Use hardcoded sample rate logic for offline rendering compatibility
+        // If we are offline, ctx.sampleRate is fixed at 44100 usually.
+        const bufferSize = Math.floor(this.ctx.sampleRate * 0.15);
+
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+        const noiseGain = this.ctx.createGain();
+
+        osc.connect(gain);
+        noise.connect(noiseGain);
+        noiseGain.connect(gain);
+        gain.connect(this.masterGain);
+
+        if (type === 'High Slap') {
+            osc.frequency.setValueAtTime(900, t);
+            osc.frequency.exponentialRampToValueAtTime(1400, t + 0.03);
+            gain.gain.setValueAtTime(1.2, t);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.12);
+            noiseGain.gain.setValueAtTime(0.8, t);
+            noiseGain.gain.exponentialRampToValueAtTime(0.01, t + 0.04);
+        } else if (type === 'Bass Thud') {
+            osc.frequency.setValueAtTime(150, t);
+            osc.frequency.exponentialRampToValueAtTime(50, t + 0.25);
+            gain.gain.setValueAtTime(1.5, t);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.35);
+            noiseGain.gain.value = 0;
+        } else if (type === 'Stick Roll') {
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(2200, t);
+            gain.gain.setValueAtTime(0.5, t);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.04);
+            noiseGain.gain.value = 0.3;
+        } else if (type === 'Muted') {
+            osc.frequency.setValueAtTime(450, t);
+            gain.gain.setValueAtTime(0.9, t);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.04);
+            noiseGain.gain.value = 0.15;
+        }
+
+        osc.start(t);
+        noise.start(t);
+        osc.stop(t + 0.5);
+        noise.stop(t + 0.5);
+        setTimeout(() => { gain.disconnect(); }, 600);
+    },
+
+    playTabla(type, t) {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+
+        if (type === 'Dha (Bass+Rim)') {
+            this.playTabla('Ghe (Bass)', t);
+            this.playTabla('Na (Rim)', t);
+            return;
+        }
+        if (type === 'Ghe (Bass)') {
+            osc.frequency.setValueAtTime(100, t);
+            osc.frequency.exponentialRampToValueAtTime(80, t + 0.3);
+            gain.gain.setValueAtTime(0.8, t);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
+        } else if (type === 'Na (Rim)') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(1200, t);
+            gain.gain.setValueAtTime(0.6, t);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+        } else if (type === 'Tin (Center)') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(600, t);
+            gain.gain.setValueAtTime(0.5, t);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.25);
+        }
+        osc.start(t);
+        osc.stop(t + 0.5);
+        setTimeout(() => { gain.disconnect(); }, 600);
+    },
+
+    playFlute(note, t) {
+        const freqs = { 'C5': 523.25, 'A4': 440.00, 'G4': 392.00, 'E4': 329.63, 'D4': 293.66 };
+        const f = freqs[note] || 440;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        const vibrato = this.ctx.createOscillator();
+        const vibratoGain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = f;
+        vibrato.frequency.value = 5;
+        vibratoGain.gain.value = 2;
+        vibrato.connect(vibratoGain);
+        vibratoGain.connect(osc.frequency);
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+        const attack = 0.05, decay = 0.1, sustain = 0.6, release = 0.2, duration = 0.4;
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(sustain, t + attack);
+        gain.gain.linearRampToValueAtTime(sustain * 0.8, t + attack + decay);
+        gain.gain.setValueAtTime(sustain * 0.8, t + duration - release);
+        gain.gain.linearRampToValueAtTime(0, t + duration);
+        osc.start(t);
+        vibrato.start(t);
+        osc.stop(t + duration + 0.1);
+        vibrato.stop(t + duration + 0.1);
+        setTimeout(() => { gain.disconnect(); vibratoGain.disconnect(); }, (duration + 0.2) * 1000);
+    },
+
+    playPiano(note, t) {
+        const freqs = { 'C4': 261.63, 'E4': 329.63, 'G4': 392.00, 'B4': 493.88, 'C5': 523.25 };
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.value = freqs[note] || 440;
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.6, t + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + 1.5);
+        osc.start(t);
+        osc.stop(t + 1.5);
+    },
+
+    playSynth(note, t) {
+        const freqs = { 'Root': 110, 'Third': 138.59, 'Fifth': 164.81, 'Octave': 220 };
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        const filter = this.ctx.createBiquadFilter();
+        osc.type = 'sawtooth';
+        osc.frequency.value = freqs[note] || 110;
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(200, t);
+        filter.frequency.exponentialRampToValueAtTime(3000, t + 0.1);
+        filter.frequency.exponentialRampToValueAtTime(200, t + 0.5);
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.masterGain);
+        gain.gain.setValueAtTime(0.4, t);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.5);
+        osc.start(t);
+        osc.stop(t + 0.5);
+    },
+
+    playBass(note, t) {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'square';
+        const f = note === 'Low' ? 55 : (note === 'Mid' ? 82 : 110);
+        osc.frequency.value = f;
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+        gain.gain.setValueAtTime(0.5, t);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
+        osc.start(t);
+        osc.stop(t + 0.4);
+    },
+
+    playDrumKit(type, t) {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+        if (type === 'Kick') {
+            osc.frequency.setValueAtTime(150, t);
+            osc.frequency.exponentialRampToValueAtTime(0.01, t + 0.5);
+            gain.gain.setValueAtTime(1, t);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.5);
+        } else if (type === 'Snare') {
+            osc.type = 'triangle';
+            gain.gain.setValueAtTime(0.5, t);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+        } else if (type === 'HiHat') {
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(800, t);
+            gain.gain.setValueAtTime(0.15, t);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.05);
+        }
+        osc.start(t);
+        osc.stop(t + 0.5);
+    }
+};
+
+// --- Application State & Logic ---
+const app = {
+    isPlaying: false,
+    currentBeat: 0,
+    tracks: [],
+
+    presets: {
+        'tamate': { name: 'Tamate (Powerful)', rows: ['High Slap', 'Bass Thud', 'Muted', 'Stick Roll'] },
+        'tabla': { name: 'Tabla', rows: ['Dha (Bass+Rim)', 'Ghe (Bass)', 'Na (Rim)', 'Tin (Center)'] },
+        'flute': { name: 'Flute', rows: ['C5', 'A4', 'G4', 'E4', 'D4'] },
+        'piano': { name: 'Piano', rows: ['C5', 'B4', 'G4', 'E4', 'C4'] },
+        'synth': { name: 'Synth', rows: ['Octave', 'Fifth', 'Third', 'Root'] },
+        'drums': { name: 'Drums', rows: ['HiHat', 'Snare', 'Kick'] },
+        'bass': { name: 'Bass', rows: ['High', 'Mid', 'Low'] }
+    },
+
+    init() {
+        this.addTrack('tamate');
+        document.getElementById('play-btn').addEventListener('click', () => this.togglePlay());
+        document.getElementById('stop-btn').addEventListener('click', () => this.stop());
+        document.getElementById('clear-btn').addEventListener('click', () => this.clearAll());
+        document.getElementById('bpm-input').addEventListener('change', (e) => { AudioEngine.tempo = parseInt(e.target.value); });
+        document.getElementById('instrument-select').addEventListener('change', (e) => {
+            this.addTrack(e.target.value);
+            e.target.value = '';
+        });
+        this.drawVisualizer();
+        this.renderPresetList();
+    },
+
+    addTrack(type, patternData = null) {
+        const preset = this.presets[type];
+        if (!preset) return;
+
+        const trackId = Date.now() + Math.random();
+        const trackData = {
+            id: trackId,
+            instrument: type,
+            name: preset.name,
+            rows: preset.rows.map((label, i) => ({
+                label: label,
+                pattern: patternData ? patternData[i] : new Array(16).fill(false)
+            }))
+        };
+
+        this.tracks.push(trackData);
+        this.renderTracks();
+    },
+
+    removeTrack(id) {
+        this.tracks = this.tracks.filter(t => t.id !== id);
+        this.renderTracks();
+    },
+
+    renderTracks() {
+        const container = document.getElementById('sequencer');
+        container.innerHTML = '';
+
+        this.tracks.forEach(track => {
+            const trackEl = document.createElement('div');
+            trackEl.className = 'track';
+
+            const header = document.createElement('div');
+            header.className = 'track-header';
+            header.innerHTML = `
+                <span class="track-name">${track.name}</span>
+                <div class="track-controls">
+                    <button onclick="app.removeTrack(${track.id})">✕</button>
+                </div>
+            `;
+            trackEl.appendChild(header);
+
+            track.rows.forEach((row, rowIndex) => {
+                const rowEl = document.createElement('div');
+                rowEl.style.display = 'flex';
+                rowEl.style.alignItems = 'center';
+                rowEl.style.marginBottom = '4px';
+
+                const label = document.createElement('div');
+                label.style.width = '75px';
+                label.style.fontSize = '0.7rem';
+                label.style.color = '#888';
+                label.style.whiteSpace = 'nowrap';
+                label.style.overflow = 'hidden';
+                label.title = row.label;
+                label.textContent = row.label;
+                rowEl.appendChild(label);
+
+                const stepsWrapper = document.createElement('div');
+                stepsWrapper.className = 'steps-wrapper';
+                const grid = document.createElement('div');
+                grid.className = 'step-grid';
+
+                row.pattern.forEach((active, stepIndex) => {
+                    const step = document.createElement('div');
+                    step.className = `step ${active ? 'active' : ''} step-${stepIndex}`;
+                    if (stepIndex % 4 === 0) step.style.opacity = active ? '1' : '0.8';
+
+                    step.addEventListener('click', () => {
+                        row.pattern[stepIndex] = !row.pattern[stepIndex];
+                        step.classList.toggle('active');
+                        if (row.pattern[stepIndex]) AudioEngine.playNote(track.instrument, row.label);
+                    });
+                    grid.appendChild(step);
+                });
+
+                stepsWrapper.appendChild(grid);
+                rowEl.appendChild(stepsWrapper);
+                trackEl.appendChild(rowEl);
+            });
+
+            container.appendChild(trackEl);
+        });
+    },
+
+    togglePlay() {
+        this.isPlaying = !this.isPlaying;
+        const btn = document.getElementById('play-btn');
+
+        if (this.isPlaying) {
+            if (AudioEngine.ctx.state === 'suspended') AudioEngine.ctx.resume();
+            AudioEngine.current16thNote = 0;
+            AudioEngine.nextNoteTime = AudioEngine.ctx.currentTime;
+            this.scheduler();
+            btn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg> Pause`;
+            btn.classList.add('btn-active');
+        } else {
+            window.clearTimeout(AudioEngine.timerID);
+            btn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> Play`;
+            btn.classList.remove('btn-active');
+        }
+    },
+
+    stop() {
+        this.isPlaying = false;
+        window.clearTimeout(AudioEngine.timerID);
+        this.currentBeat = 0;
+        this.updateUIBeat(-1);
+        document.getElementById('play-btn').innerHTML = `<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> Play`;
+    },
+
+    clearAll() {
+        this.tracks.forEach(t => t.rows.forEach(r => r.pattern.fill(false)));
+        this.renderTracks();
+    },
+
+    scheduler() {
+        while (AudioEngine.nextNoteTime < AudioEngine.ctx.currentTime + AudioEngine.scheduleAheadTime) {
+            this.scheduleNote(AudioEngine.current16thNote, AudioEngine.nextNoteTime);
+            this.nextNote();
+        }
+        AudioEngine.timerID = window.setTimeout(() => this.scheduler(), 25);
+    },
+
+    nextNote() {
+        const secondsPerBeat = 60.0 / AudioEngine.tempo;
+        AudioEngine.nextNoteTime += 0.25 * secondsPerBeat;
+        AudioEngine.current16thNote++;
+        if (AudioEngine.current16thNote === 16) AudioEngine.current16thNote = 0;
+    },
+
+    scheduleNote(beatNumber, time) {
+        requestAnimationFrame(() => this.updateUIBeat(beatNumber));
+        this.tracks.forEach(track => {
+            track.rows.forEach(row => {
+                if (row.pattern[beatNumber]) AudioEngine.playNote(track.instrument, row.label, time);
+            });
+        });
+    },
+
+    updateUIBeat(beatNumber) {
+        document.querySelectorAll('.step.current-beat').forEach(el => el.classList.remove('current-beat'));
+        if (beatNumber !== -1) {
+            document.querySelectorAll(`.step-${beatNumber}`).forEach(el => el.classList.add('current-beat'));
+        }
+    },
+
+    // --- PRESET LIBRARY (Updated with 20+ Famous Beats) ---
+    presetLibrary: {
+        "Global Classics": [
+            { name: "We Will Rock You", bpm: 82, tracks: [{type:'drums', p:[[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],[1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,0]]}] },
+            { name: "Billie Jean (MJ)", bpm: 117, tracks: [{type:'drums', p:[[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]]}, {type:'bass', p:[[1,0,0,1,1,0,0,1,1,0,0,1,1,0,0,1],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}] },
+            { name: "Seven Nation Army", bpm: 120, tracks: [{type:'drums', p:[[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0]]}, {type:'bass', p:[[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[1,0,0,1,1,0,0,0,1,0,0,1,0,0,0,0]]}] },
+            { name: "Eye of the Tiger", bpm: 109, tracks: [{type:'drums', p:[[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0]]}, {type:'bass', p:[[1,0,1,0,1,1,1,0,0,1,0,0,1,1,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}] },
+            { name: "Sweet Dreams (Synth)", bpm: 125, tracks: [{type:'synth', p:[[1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0]]}, {type:'drums', p:[[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]]}] },
+            { name: "Shape of You", bpm: 96, tracks: [{type:'tabla', p:[[1,0,1,0,0,0,1,0,1,0,0,0,1,0,1,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0]]}] },
+            { name: "Uptown Funk", bpm: 115, tracks: [{type:'drums', p:[[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],[1,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0]]}, {type:'bass', p:[[1,0,0,1,0,0,0,0,1,0,0,1,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}] }
+        ],
+        "Indian Mass (South/North)": [
+            { name: "KGF (Rocky Theme)", bpm: 95, tracks: [{type:'tamate', p:[[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[1,0,1,0,0,0,1,0,1,0,1,0,0,0,1,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0]]}, {type:'bass', p:[[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}] },
+            { name: "Kantara (Varaha)", bpm: 110, tracks: [{type:'tamate', p:[[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0]]}, {type:'flute', p:[[0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0],[0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0],[0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}] },
+            { name: "Baahubali War", bpm: 130, tracks: [{type:'tamate', p:[[1,1,1,1,0,0,1,1,1,1,0,0,1,0,1,0],[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}, {type:'bass', p:[[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}] },
+            { name: "Pushpa (Oo Antava)", bpm: 100, tracks: [{type:'tabla', p:[[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],[0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],[0,1,0,0,0,1,0,0,0,1,0,0,0,0,0,0]]}, {type:'bass', p:[[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}] },
+            { name: "Vikram (Rolex Theme)", bpm: 120, tracks: [{type:'bass', p:[[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}, {type:'tamate', p:[[1,0,0,0,1,0,0,0,1,0,0,0,1,0,1,0],[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0]]}] },
+            { name: "Naatu Naatu (RRR)", bpm: 150, tracks: [{type:'tamate', p:[[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0]]}, {type:'tabla', p:[[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}] },
+            { name: "Vaathi Coming (Master)", bpm: 105, tracks: [{type:'tamate', p:[[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,1,1,0,0,1,1,0,0,1,1,0,0,1,1,0]]}, {type:'bass', p:[[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[1,0,1,0,0,0,1,0,1,0,1,0,0,0,1,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}] },
+            { name: "Jai Ho (Slumdog)", bpm: 135, tracks: [{type:'drums', p:[[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0]]}, {type:'tabla', p:[[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],[0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0],[0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}] },
+            { name: "Mundian To Bach Ke", bpm: 98, tracks: [{type:'tabla', p:[[1,0,0,1,0,0,1,0,1,0,0,1,0,0,1,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],[0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0]]}] },
+            { name: "Tunak Tunak Tun", bpm: 145, tracks: [{type:'tamate', p:[[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0]]}] },
+            { name: "Appu Dance (Puneeth)", bpm: 128, tracks: [{type:'tamate', p:[[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[1,1,1,0,1,1,1,0,1,1,1,0,1,1,1,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0]]}] },
+            { name: "Dangal (Workout)", bpm: 135, tracks: [{type:'tabla', p:[[1,0,0,1,0,0,1,0,1,0,0,1,0,0,1,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],[0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0]]}] }
+        ],
+        "Electronic & Viral": [
+            { name: "Sandstorm (Darude)", bpm: 136, tracks: [{type:'synth', p:[[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],[1,1,0,1,1,0,0,0,1,1,0,1,1,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}, {type:'drums', p:[[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0]]}] },
+            { name: "Astronomia (Coffin)", bpm: 125, tracks: [{type:'synth', p:[[1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],[0,0,1,0,0,0,1,0,1,0,1,0,1,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}, {type:'drums', p:[[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0]]}] },
+            { name: "Levels (Avicii)", bpm: 126, tracks: [{type:'synth', p:[[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}, {type:'drums', p:[[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]]}] },
+            { name: "Get Lucky (Daft Punk)", bpm: 116, tracks: [{type:'bass', p:[[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}, {type:'drums', p:[[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]]}] },
+            { name: "Despacito", bpm: 89, tracks: [{type:'drums', p:[[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0],[1,0,0,1,0,0,0,0,1,0,0,1,0,0,0,0]]}] },
+            { name: "Mario Bros Theme", bpm: 100, tracks: [{type:'piano', p:[[0,0,1,0,0,0,1,0,0,0,0,0,0,0,1,0],[0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],[1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}] }
+        ]
+    },
+
+    showPresetModal() {
+        document.getElementById('preset-modal').style.display = 'flex';
+    },
+
+    renderPresetList() {
+        const container = document.getElementById('preset-list');
+        container.innerHTML = '';
+
+        for (const [category, items] of Object.entries(this.presetLibrary)) {
+            const section = document.createElement('div');
+            section.className = 'preset-category';
+
+            const title = document.createElement('h4');
+            title.textContent = category;
+            section.appendChild(title);
+
+            const grid = document.createElement('div');
+            grid.className = 'preset-grid';
+
+            items.forEach((preset, index) => {
+                const item = document.createElement('div');
+                item.className = 'preset-item';
+                item.innerHTML = `
+                    <span class="preset-name">${preset.name}</span>
+                    <span class="preset-meta">${preset.bpm} BPM</span>
+                `;
+                item.addEventListener('click', () => {
+                    this.loadPreset(category, index);
+                    document.getElementById('preset-modal').style.display = 'none';
+                });
+                grid.appendChild(item);
+            });
+
+            section.appendChild(grid);
+            container.appendChild(section);
+        }
+    },
+
+    loadPreset(category, index) {
+        const preset = this.presetLibrary[category][index];
+        if (!preset) return;
+
+        // Stop current playback
+        this.stop();
+
+        // Set BPM
+        AudioEngine.tempo = preset.bpm;
+        document.getElementById('bpm-input').value = preset.bpm;
+
+        // Clear existing tracks
+        this.tracks = [];
+
+        // Load new tracks
+        preset.tracks.forEach(t => {
+            this.addTrack(t.type, t.p);
+        });
+
+        this.renderTracks();
+    },
+
+    exportJSON() {
+        const data = {
+            tempo: AudioEngine.tempo,
+            tracks: this.tracks
+        };
+        const json = JSON.stringify(data, null, 2);
+        const blob = new Blob([json], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'bengaluru_band_beat.json';
+        a.click();
+    },
+
+    showImportModal() {
+        document.getElementById('import-modal').style.display = 'flex';
+    },
+
+    // Handle File Selection
+    handleFileImport(input) {
+        const file = input.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            document.getElementById('import-area').value = e.target.result;
+            // Optional: Auto-import immediately on file select
+            // app.importJSON();
+        };
+        reader.readAsText(file);
+    },
+
+    importJSON() {
+        try {
+            const raw = document.getElementById('import-area').value;
+            const data = JSON.parse(raw);
+            if (data.tempo) {
+                AudioEngine.tempo = data.tempo;
+                document.getElementById('bpm-input').value = data.tempo;
+            }
+            if (data.tracks) {
+                this.tracks = data.tracks;
+                this.renderTracks();
+            }
+            document.getElementById('import-modal').style.display = 'none';
+        } catch (e) {
+            alert('Invalid JSON');
+        }
+    },
+
+    async downloadRingtone() {
+        const btn = document.querySelector('button[onclick="app.downloadRingtone()"]');
+        const originalText = btn.innerHTML;
+        btn.innerText = "Rendering...";
+        btn.disabled = true; // Disable to prevent double clicks
+
+        // Give UI a moment to update
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        // Validate Input
+        let loopCount = parseInt(document.getElementById('loops-input').value);
+        if (!loopCount || loopCount < 1) loopCount = 4;
+
+        let tempo = AudioEngine.tempo;
+        if (!tempo || tempo < 10) tempo = 120;
+
+        const secondsPerBeat = 60.0 / tempo;
+        const barDuration = secondsPerBeat * 4;
+        const totalDuration = barDuration * loopCount;
+
+        // Ensure total duration is valid
+        if (totalDuration <= 0) {
+            alert("Invalid duration.");
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            return;
+        }
+
+        // CRITICAL FIX: Audio buffer length must be an integer
+        const sampleRate = 44100;
+        const totalSamples = Math.ceil(totalDuration * sampleRate);
+
+        // Store original context
+        const originalCtx = AudioEngine.ctx;
+        const originalMaster = AudioEngine.masterGain;
+
+        try {
+            // Stop live playback if running to prevent conflicts
+            if (app.isPlaying) {
+                app.togglePlay();
+            }
+
+            const offlineCtx = new OfflineAudioContext(1, totalSamples, sampleRate);
+
+            AudioEngine.ctx = offlineCtx;
+            AudioEngine.masterGain = offlineCtx.createGain();
+            AudioEngine.masterGain.connect(offlineCtx.destination);
+
+            for (let loop = 0; loop < loopCount; loop++) {
+                const loopOffset = loop * barDuration;
+                for (let i = 0; i < 16; i++) {
+                    const time = loopOffset + (i * 0.25 * secondsPerBeat);
+                    this.tracks.forEach(track => {
+                        track.rows.forEach(row => {
+                            if (row.pattern[i]) {
+                                AudioEngine.playNote(track.instrument, row.label, time);
+                            }
+                        });
+                    });
+                }
+            }
+
+            const renderedBuffer = await offlineCtx.startRendering();
+            const wavBlob = this.bufferToWave(renderedBuffer, totalSamples);
+            const url = URL.createObjectURL(wavBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'bengaluru_band_ringtone.wav';
+            a.click();
+        } catch(e) {
+            console.error(e);
+            alert("Error generating ringtone: " + e.message);
+        } finally {
+            // Restore Realtime Context
+            AudioEngine.ctx = originalCtx;
+            AudioEngine.masterGain = originalMaster;
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    },
+
+    bufferToWave(abuffer, len) {
+        let numOfChan = abuffer.numberOfChannels,
+            // Ensure length is an integer for ArrayBuffer
+            length = Math.ceil(len * numOfChan * 2 + 44),
+            buffer = new ArrayBuffer(length),
+            view = new DataView(buffer),
+            channels = [], i, sample,
+            offset = 0,
+            pos = 0;
+
+        function setUint16(data) { view.setUint16(pos, data, true); pos += 2; }
+        function setUint32(data) { view.setUint32(pos, data, true); pos += 4; }
+
+        setUint32(0x46464952);                         // "RIFF"
+        setUint32(length - 8);                         // file length - 8
+        setUint32(0x45564157);                         // "WAVE"
+
+        setUint32(0x20746d66);                         // "fmt " chunk
+        setUint32(16);                                 // length = 16
+        setUint16(1);                                  // PCM (uncompressed)
+        setUint16(numOfChan);
+        setUint32(abuffer.sampleRate);
+        setUint32(abuffer.sampleRate * 2 * numOfChan); // avg. bytes/sec
+        setUint16(numOfChan * 2);                      // block-align
+        setUint16(16);                                 // 16-bit (hardcoded in this example)
+
+        setUint32(0x61746164);                         // "data" - chunk
+        setUint32(length - pos - 4);                   // chunk length
+
+        for(i = 0; i < abuffer.numberOfChannels; i++)
+            channels.push(abuffer.getChannelData(i));
+
+        while(pos < length && offset < abuffer.length) { // Added safety check for offset
+            for(i = 0; i < numOfChan; i++) {
+                // Safety check to ensure we don't read past buffer
+                if (offset >= channels[i].length) break;
+
+                sample = Math.max(-1, Math.min(1, channels[i][offset]));
+                sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767)|0;
+                view.setInt16(pos, sample, true);
+                pos += 2;
+            }
+            offset++;
+        }
+        return new Blob([buffer], {type: "audio/wav"});
+    },
+
+    drawVisualizer() {
+        const canvas = document.getElementById('visualizer');
+        const canvasCtx = canvas.getContext('2d');
+        const bufferLength = AudioEngine.analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+
+        const draw = () => {
+            requestAnimationFrame(draw);
+            if (canvas.width !== canvas.offsetWidth) {
+                canvas.width = canvas.offsetWidth;
+                canvas.height = canvas.offsetHeight;
+            }
+            AudioEngine.analyser.getByteFrequencyData(dataArray);
+            canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+            const barWidth = (canvas.width / bufferLength) * 2.5;
+            let barHeight;
+            let x = 0;
+            for(let i = 0; i < bufferLength; i++) {
+                barHeight = dataArray[i] * 1.5;
+                canvasCtx.fillStyle = 'rgba(255, 87, 34, ' + (barHeight/300) + ')';
+                canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+                x += barWidth + 1;
+            }
+        };
+        draw();
+    }
+};
+
+document.getElementById('init-audio-btn').addEventListener('click', () => {
+    AudioEngine.init();
+    app.init();
+    document.getElementById('start-overlay').style.opacity = '0';
+    setTimeout(() => {
+        document.getElementById('start-overlay').remove();
+    }, 500);
+});
+
+</script>
+</body>
+</html>
