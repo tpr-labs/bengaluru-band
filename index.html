@@ -128,13 +128,13 @@
             font-weight: bold;
             -moz-appearance: textfield;
         }
-        
+
         .control-group input::-webkit-outer-spin-button,
         .control-group input::-webkit-inner-spin-button {
             -webkit-appearance: none;
             margin: 0;
         }
-        
+
         .control-label { font-size: 0.7rem; color: var(--text-muted); margin-right: 5px; text-transform: uppercase; }
 
         /* Sequencer Grid */
@@ -162,7 +162,7 @@
         }
 
         .track-name { font-weight: bold; font-size: 0.9rem; color: var(--accent); }
-        
+
         .track-controls button {
             background: none;
             border: none;
@@ -175,7 +175,7 @@
         .steps-wrapper {
             overflow-x: auto;
             padding-bottom: 5px;
-            scrollbar-width: none; 
+            scrollbar-width: none;
         }
         .steps-wrapper::-webkit-scrollbar { display: none; }
 
@@ -199,7 +199,7 @@
             background: var(--primary);
             box-shadow: var(--beat-shadow);
         }
-        
+
         .step.playing {
             border: 2px solid white;
         }
@@ -417,9 +417,9 @@
                     <div class="import-label">📂 Tap to Upload .json File</div>
                     <input type="file" id="import-file" accept=".json" onchange="app.handleFileImport(this)">
                 </label>
-                
+
                 <div style="text-align:center; color:#666; margin: 10px 0; font-size:0.8rem;">OR PASTE TEXT</div>
-                
+
                 <textarea id="import-area" placeholder="Paste JSON code here..."></textarea>
                 <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:10px;">
                     <button class="btn btn-primary" onclick="app.importJSON()">Load Data</button>
@@ -473,7 +473,7 @@ const AudioEngine = {
         this.masterGain = this.ctx.createGain();
         this.analyser = this.ctx.createAnalyser();
         this.analyser.fftSize = 256;
-        
+
         this.masterGain.connect(this.analyser);
         this.analyser.connect(this.ctx.destination);
         this.masterGain.gain.value = 0.8;
@@ -495,11 +495,8 @@ const AudioEngine = {
     playTamate(type, t) {
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
-        
-        // Use hardcoded sample rate logic for offline rendering compatibility
-        // If we are offline, ctx.sampleRate is fixed at 44100 usually.
+
         const bufferSize = Math.floor(this.ctx.sampleRate * 0.15);
-        
         const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
         const data = buffer.getChannelData(0);
         for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
@@ -684,7 +681,7 @@ const app = {
     isPlaying: false,
     currentBeat: 0,
     tracks: [],
-    
+
     presets: {
         'tamate': { name: 'Tamate (Powerful)', rows: ['High Slap', 'Bass Thud', 'Muted', 'Stick Roll'] },
         'tabla': { name: 'Tabla', rows: ['Dha (Bass+Rim)', 'Ghe (Bass)', 'Na (Rim)', 'Tin (Center)'] },
@@ -740,7 +737,7 @@ const app = {
         this.tracks.forEach(track => {
             const trackEl = document.createElement('div');
             trackEl.className = 'track';
-            
+
             const header = document.createElement('div');
             header.className = 'track-header';
             header.innerHTML = `
@@ -797,7 +794,7 @@ const app = {
     togglePlay() {
         this.isPlaying = !this.isPlaying;
         const btn = document.getElementById('play-btn');
-        
+
         if (this.isPlaying) {
             if (AudioEngine.ctx.state === 'suspended') AudioEngine.ctx.resume();
             AudioEngine.current16thNote = 0;
@@ -856,38 +853,91 @@ const app = {
         }
     },
 
-    // --- PRESET LIBRARY (Updated with 20+ Famous Beats) ---
+    // --- PRESET LIBRARY (20+ ORIGINAL PATTERNS) ---
     presetLibrary: {
-        "Global Classics": [
-            { name: "We Will Rock You", bpm: 82, tracks: [{type:'drums', p:[[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],[1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,0]]}] },
-            { name: "Billie Jean (MJ)", bpm: 117, tracks: [{type:'drums', p:[[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]]}, {type:'bass', p:[[1,0,0,1,1,0,0,1,1,0,0,1,1,0,0,1],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}] },
-            { name: "Seven Nation Army", bpm: 120, tracks: [{type:'drums', p:[[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0]]}, {type:'bass', p:[[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[1,0,0,1,1,0,0,0,1,0,0,1,0,0,0,0]]}] },
-            { name: "Eye of the Tiger", bpm: 109, tracks: [{type:'drums', p:[[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0]]}, {type:'bass', p:[[1,0,1,0,1,1,1,0,0,1,0,0,1,1,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}] },
-            { name: "Sweet Dreams (Synth)", bpm: 125, tracks: [{type:'synth', p:[[1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0]]}, {type:'drums', p:[[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]]}] },
-            { name: "Shape of You", bpm: 96, tracks: [{type:'tabla', p:[[1,0,1,0,0,0,1,0,1,0,0,0,1,0,1,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0]]}] },
-            { name: "Uptown Funk", bpm: 115, tracks: [{type:'drums', p:[[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],[1,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0]]}, {type:'bass', p:[[1,0,0,1,0,0,0,0,1,0,0,1,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}] }
+        "Tamate Jatre (Festival)": [
+            { name: "Village Palki Beat", bpm: 130, tracks: [
+                {type:'tamate', p:[[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1]]}
+            ]},
+            { name: "Procession March", bpm: 115, tracks: [
+                {type:'tamate', p:[[1,1,0,1,1,1,0,1,1,1,0,1,1,1,0,1],[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0]]},
+                {type:'bass', p:[[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}
+            ]},
+            { name: "Jatre High Speed", bpm: 145, tracks: [
+                {type:'tamate', p:[[1,0,1,0,1,1,1,0,1,0,1,0,1,1,1,0],[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0]]}
+            ]},
+            { name: "Temple Bell Rhythm", bpm: 120, tracks: [
+                {type:'tamate', p:[[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1]]},
+                {type:'piano', p:[[0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0]]}
+            ]},
+            { name: "Ganesha Visarjan", bpm: 135, tracks: [
+                {type:'tamate', p:[[1,1,1,0,1,0,1,0,1,1,1,0,1,0,1,0],[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]},
+                {type:'drums', p:[[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0]]}
+            ]}
         ],
-        "Indian Mass (South/North)": [
-            { name: "KGF (Rocky Theme)", bpm: 95, tracks: [{type:'tamate', p:[[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[1,0,1,0,0,0,1,0,1,0,1,0,0,0,1,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0]]}, {type:'bass', p:[[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}] },
-            { name: "Kantara (Varaha)", bpm: 110, tracks: [{type:'tamate', p:[[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0]]}, {type:'flute', p:[[0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0],[0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0],[0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}] },
-            { name: "Baahubali War", bpm: 130, tracks: [{type:'tamate', p:[[1,1,1,1,0,0,1,1,1,1,0,0,1,0,1,0],[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}, {type:'bass', p:[[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}] },
-            { name: "Pushpa (Oo Antava)", bpm: 100, tracks: [{type:'tabla', p:[[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],[0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],[0,1,0,0,0,1,0,0,0,1,0,0,0,0,0,0]]}, {type:'bass', p:[[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}] },
-            { name: "Vikram (Rolex Theme)", bpm: 120, tracks: [{type:'bass', p:[[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}, {type:'tamate', p:[[1,0,0,0,1,0,0,0,1,0,0,0,1,0,1,0],[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0]]}] },
-            { name: "Naatu Naatu (RRR)", bpm: 150, tracks: [{type:'tamate', p:[[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0]]}, {type:'tabla', p:[[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}] },
-            { name: "Vaathi Coming (Master)", bpm: 105, tracks: [{type:'tamate', p:[[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,1,1,0,0,1,1,0,0,1,1,0,0,1,1,0]]}, {type:'bass', p:[[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[1,0,1,0,0,0,1,0,1,0,1,0,0,0,1,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}] },
-            { name: "Jai Ho (Slumdog)", bpm: 135, tracks: [{type:'drums', p:[[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0]]}, {type:'tabla', p:[[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],[0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0],[0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}] },
-            { name: "Mundian To Bach Ke", bpm: 98, tracks: [{type:'tabla', p:[[1,0,0,1,0,0,1,0,1,0,0,1,0,0,1,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],[0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0]]}] },
-            { name: "Tunak Tunak Tun", bpm: 145, tracks: [{type:'tamate', p:[[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0]]}] },
-            { name: "Appu Dance (Puneeth)", bpm: 128, tracks: [{type:'tamate', p:[[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[1,1,1,0,1,1,1,0,1,1,1,0,1,1,1,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0]]}] },
-            { name: "Dangal (Workout)", bpm: 135, tracks: [{type:'tabla', p:[[1,0,0,1,0,0,1,0,1,0,0,1,0,0,1,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],[0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0]]}] }
+        "Fusion Melodies": [
+            { name: "Bamboo Flute Drift", bpm: 90, tracks: [
+                {type:'flute', p:[[1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],[0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],[0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],[0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0]]},
+                {type:'tabla', p:[[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],[0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0],[0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}
+            ]},
+            { name: "Piano & Tabla Mix", bpm: 100, tracks: [
+                {type:'piano', p:[[0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0],[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],[0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]},
+                {type:'tabla', p:[[1,0,0,1,0,0,1,0,1,0,0,1,0,0,1,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],[0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0]]}
+            ]},
+            { name: "Morning Raga", bpm: 80, tracks: [
+                {type:'flute', p:[[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0],[0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0]]},
+                {type:'synth', p:[[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}
+            ]},
+            { name: "Carnatic Bass", bpm: 110, tracks: [
+                {type:'bass', p:[[1,0,0,1,0,0,1,0,0,0,1,0,0,1,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]},
+                {type:'tabla', p:[[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0]]}
+            ]},
+            { name: "Mystic Evening", bpm: 95, tracks: [
+                {type:'synth', p:[[0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0]]},
+                {type:'flute', p:[[0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],[0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0]]}
+            ]}
         ],
-        "Electronic & Viral": [
-            { name: "Sandstorm (Darude)", bpm: 136, tracks: [{type:'synth', p:[[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],[1,1,0,1,1,0,0,0,1,1,0,1,1,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}, {type:'drums', p:[[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0]]}] },
-            { name: "Astronomia (Coffin)", bpm: 125, tracks: [{type:'synth', p:[[1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],[0,0,1,0,0,0,1,0,1,0,1,0,1,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}, {type:'drums', p:[[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0]]}] },
-            { name: "Levels (Avicii)", bpm: 126, tracks: [{type:'synth', p:[[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}, {type:'drums', p:[[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]]}] },
-            { name: "Get Lucky (Daft Punk)", bpm: 116, tracks: [{type:'bass', p:[[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}, {type:'drums', p:[[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]]}] },
-            { name: "Despacito", bpm: 89, tracks: [{type:'drums', p:[[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0],[1,0,0,1,0,0,0,0,1,0,0,1,0,0,0,0]]}] },
-            { name: "Mario Bros Theme", bpm: 100, tracks: [{type:'piano', p:[[0,0,1,0,0,0,1,0,0,0,0,0,0,0,1,0],[0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],[1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}] }
+        "Electronic Vibes": [
+            { name: "Cyber Pulse", bpm: 128, tracks: [
+                {type:'synth', p:[[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]},
+                {type:'drums', p:[[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0]]}
+            ]},
+            { name: "Neon Drive", bpm: 110, tracks: [
+                {type:'bass', p:[[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]},
+                {type:'drums', p:[[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]]}
+            ]},
+            { name: "Tech House Basic", bpm: 124, tracks: [
+                {type:'drums', p:[[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0]]},
+                {type:'synth', p:[[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}
+            ]},
+            { name: "Retro Wave", bpm: 100, tracks: [
+                {type:'bass', p:[[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]},
+                {type:'drums', p:[[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]]}
+            ]},
+            { name: "Slow Jam", bpm: 85, tracks: [
+                {type:'piano', p:[[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0],[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0]]},
+                {type:'drums', p:[[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]]}
+            ]}
+        ],
+        "Percussion & Rhythm": [
+            { name: "Tabla Solo (Teen Taal)", bpm: 110, tracks: [
+                {type:'tabla', p:[[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],[1,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],[0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0]]}
+            ]},
+            { name: "Drum & Bass Fast", bpm: 170, tracks: [
+                {type:'drums', p:[[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],[1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0]]},
+                {type:'bass', p:[[1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}
+            ]},
+            { name: "Hip Hop Beat", bpm: 95, tracks: [
+                {type:'drums', p:[[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],[1,0,0,1,0,0,0,0,1,0,0,0,0,0,1,0]]}
+            ]},
+            { name: "Afro Percussion", bpm: 115, tracks: [
+                {type:'tamate', p:[[1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0]]},
+                {type:'tabla', p:[[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0]]}
+            ]},
+            { name: "Reggae Vibe", bpm: 75, tracks: [
+                {type:'bass', p:[[0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]]},
+                {type:'drums', p:[[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]}
+            ]}
         ]
     },
 
@@ -902,7 +952,7 @@ const app = {
         for (const [category, items] of Object.entries(this.presetLibrary)) {
             const section = document.createElement('div');
             section.className = 'preset-category';
-            
+
             const title = document.createElement('h4');
             title.textContent = category;
             section.appendChild(title);
@@ -935,7 +985,7 @@ const app = {
 
         // Stop current playback
         this.stop();
-        
+
         // Set BPM
         AudioEngine.tempo = preset.bpm;
         document.getElementById('bpm-input').value = preset.bpm;
@@ -968,17 +1018,17 @@ const app = {
     showImportModal() {
         document.getElementById('import-modal').style.display = 'flex';
     },
-    
+
     // Handle File Selection
     handleFileImport(input) {
         const file = input.files[0];
         if (!file) return;
-        
+
         const reader = new FileReader();
         reader.onload = (e) => {
             document.getElementById('import-area').value = e.target.result;
             // Optional: Auto-import immediately on file select
-            // app.importJSON(); 
+            // app.importJSON();
         };
         reader.readAsText(file);
     },
@@ -1013,12 +1063,12 @@ const app = {
         // Validate Input
         let loopCount = parseInt(document.getElementById('loops-input').value);
         if (!loopCount || loopCount < 1) loopCount = 4;
-        
+
         let tempo = AudioEngine.tempo;
-        if (!tempo || tempo < 10) tempo = 120; 
+        if (!tempo || tempo < 10) tempo = 120;
 
         const secondsPerBeat = 60.0 / tempo;
-        const barDuration = secondsPerBeat * 4; 
+        const barDuration = secondsPerBeat * 4;
         const totalDuration = barDuration * loopCount;
 
         // Ensure total duration is valid
@@ -1040,11 +1090,11 @@ const app = {
         try {
             // Stop live playback if running to prevent conflicts
             if (app.isPlaying) {
-                app.togglePlay(); 
+                app.togglePlay();
             }
 
             const offlineCtx = new OfflineAudioContext(1, totalSamples, sampleRate);
-            
+
             AudioEngine.ctx = offlineCtx;
             AudioEngine.masterGain = offlineCtx.createGain();
             AudioEngine.masterGain.connect(offlineCtx.destination);
@@ -1118,10 +1168,10 @@ const app = {
             for(i = 0; i < numOfChan; i++) {
                 // Safety check to ensure we don't read past buffer
                 if (offset >= channels[i].length) break;
-                
-                sample = Math.max(-1, Math.min(1, channels[i][offset])); 
-                sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767)|0; 
-                view.setInt16(pos, sample, true); 
+
+                sample = Math.max(-1, Math.min(1, channels[i][offset]));
+                sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767)|0;
+                view.setInt16(pos, sample, true);
                 pos += 2;
             }
             offset++;
